@@ -8,7 +8,7 @@ import {
 } from '@openrouter/ai-sdk-provider';
 import assert from 'assert';
 import defu from 'defu';
-import path from 'path';
+import path from 'pathe';
 import type { ProviderConfig } from './config';
 import type { Context } from './context';
 import { PluginHookType } from './plugin';
