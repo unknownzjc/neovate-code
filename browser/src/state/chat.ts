@@ -79,13 +79,17 @@ interface ChatActions {
     sessionId: string;
     messages: Message[];
   }): Promise<() => void>;
-  send(message: string, delta?: Delta): void;
+  send(
+    message: string,
+    extra: { delta?: Delta; attachments?: (FilePart | ImagePart)[] },
+  ): void;
   addMessage(message: UIMessage | UIMessage[]): void;
   destroy(): void;
   sendMessage(opts: {
     message: string | null;
     planMode?: boolean;
     model?: string;
+    attachments?: (FilePart | ImagePart)[];
   }): Promise<LoopResult | { success: false; error: Error }>;
   getSlashCommands(): Promise<CommandEntry[]>;
   getFiles(opts: { query?: string }): Promise<FileItem[]>;
@@ -261,7 +265,7 @@ export const actions: ChatActions = {
     };
   },
 
-  async send(message, delta: Delta) {
+  async send(message, { delta, attachments }) {
     const { cwd, sessionId } = state;
 
     const isDelta = BLOT_NAME_CONTENT_REGEX.test(message);
@@ -273,13 +277,13 @@ export const actions: ChatActions = {
     });
 
     if (!isDelta) {
-      const result = await this.sendMessage({ message });
+      const result = await this.sendMessage({ message, attachments });
       await this.setSummary({ userPrompt: message, result });
       return;
     }
 
     const isCommand = SLASH_COMMAND_REGEX.test(message);
-    const prompt = getPrompt(delta);
+    const prompt = delta ? getPrompt(delta) : '';
 
     if (!isCommand) {
       await clientActions.request('session.addMessages', {
@@ -293,7 +297,7 @@ export const actions: ChatActions = {
           },
         ],
       });
-      const result = await this.sendMessage({ message: null });
+      const result = await this.sendMessage({ message: null, attachments });
       await this.setSummary({ userPrompt: message, result });
       return;
     }
@@ -355,7 +359,7 @@ export const actions: ChatActions = {
             sessionId,
             messages: messages,
           });
-          await this.sendMessage({ message: null });
+          await this.sendMessage({ message: null, attachments });
         } else if (isLocal) {
           const parsedMessages = messages.map((message) => {
             if (message.role === 'user') {
@@ -391,13 +395,13 @@ export const actions: ChatActions = {
     message: string | null;
     planMode?: boolean;
     model?: string;
+    attachments?: (FilePart | ImagePart)[];
   }) {
     try {
       state.status = 'processing';
       state.processingTokens = 0;
       state.loading = true;
       const { cwd, sessionId } = state;
-      let attachments: Array<FilePart | ImagePart> = [];
 
       const response = (await clientActions.request('session.send', {
         message: opts.message,
@@ -405,7 +409,7 @@ export const actions: ChatActions = {
         model: opts.model,
         cwd,
         sessionId,
-        attachments,
+        attachments: opts.attachments,
       })) as LoopResult;
 
       if (response.success) {
