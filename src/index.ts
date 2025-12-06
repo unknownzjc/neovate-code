@@ -273,6 +273,7 @@ async function runInteractive(
     exitOnCtrlC: false,
   });
   const exit = () => {
+    nodeBridge.destroy();
     process.exit(0);
   };
   process.on('SIGINT', exit);

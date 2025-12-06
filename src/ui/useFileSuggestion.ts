@@ -17,27 +17,32 @@ export function usePaths() {
   const { bridge, cwd } = useAppStore();
   const [isLoading, setIsLoading] = useState(false);
   const [paths, setPaths] = useState<string[]>([]);
-  const [lastLoadTime, setLastLoadTime] = useState(0);
   const loadPaths = useCallback(() => {
     setIsLoading(true);
-    // TODO: improve this
-    // Now it's load only once
-    if (Date.now() - lastLoadTime < 600000000000) {
-      setIsLoading(false);
-      return;
-    }
     bridge
       .request('utils.getPaths', { cwd })
       .then((res) => {
         setPaths(res.data.paths);
-        setIsLoading(false);
-        setLastLoadTime(Date.now());
       })
       .catch((error) => {
         console.error('Failed to get paths:', error);
+      })
+      .finally(() => {
         setIsLoading(false);
       });
-  }, [bridge, cwd, lastLoadTime]);
+  }, [bridge, cwd]);
+
+  useEffect(() => {
+    const handler = (data: { cwd: string }) => {
+      if (data?.cwd === cwd) {
+        loadPaths();
+      }
+    };
+    bridge.onEvent('workspace.changed', handler);
+    return () => {
+      bridge.messageBus.offEvent('workspace.changed', handler);
+    };
+  }, [bridge, cwd, loadPaths]);
   return {
     paths,
     isLoading,
@@ -230,7 +235,7 @@ export function useFileSuggestion(
     if (hasQuery) {
       loadPaths();
     }
-  }, [hasQuery, query]);
+  }, [hasQuery, loadPaths, query]);
 
   // Use common list navigation logic
   const navigation = useListNavigation(matchedPaths);

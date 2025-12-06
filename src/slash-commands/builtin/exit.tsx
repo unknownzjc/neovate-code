@@ -12,9 +12,6 @@ export const exitCommand: LocalJSXCommand = {
 
       React.useEffect(() => {
         setStatus('exit');
-        setTimeout(() => {
-          process.exit(0);
-        }, 100);
       }, []);
 
       return null;

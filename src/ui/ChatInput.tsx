@@ -206,9 +206,6 @@ export function ChatInput() {
             onReverseSearchPrevious={handlers.handleReverseSearchPrevious}
             onExit={() => {
               setStatus('exit');
-              setTimeout(() => {
-                process.exit(0);
-              }, 100);
             }}
             onExitMessage={(show, key) => {
               setExitMessage(show ? `Press ${key} again to exit` : null);

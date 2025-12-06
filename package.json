@@ -99,6 +99,7 @@
     "ai": "^5.0.106",
     "chalk": "^5.5.0",
     "chardet": "^2.1.1",
+    "chokidar": "^3.6.0",
     "chrome-devtools-mcp": "^0.8.1",
     "clipboardy": "^5.0.1",
     "date-fns": "^4.1.0",

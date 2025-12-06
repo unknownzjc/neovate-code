@@ -80,9 +80,11 @@ export function App() {
     bridge,
     sessionId,
     cwd,
+    status,
   } = useAppStore();
   const [forkMessages, setForkMessages] = React.useState<any[]>([]);
   const [forkLoading, setForkLoading] = React.useState(false);
+  const exitTriggeredRef = React.useRef(false);
   React.useEffect(() => {
     if (!forkModalVisible) return;
     if (!bridge || !cwd || !sessionId) {
@@ -104,6 +106,20 @@ export function App() {
       }
     })();
   }, [forkModalVisible, bridge, cwd, sessionId]);
+  React.useEffect(() => {
+    if (status !== 'exit') return;
+    if (exitTriggeredRef.current) return;
+    exitTriggeredRef.current = true;
+    (async () => {
+      try {
+        if (bridge && cwd) {
+          await bridge.request('workspace.exit', { cwd });
+        }
+      } finally {
+        process.exit(0);
+      }
+    })();
+  }, [status, bridge, cwd]);
   return (
     <Box
       flexDirection="column"

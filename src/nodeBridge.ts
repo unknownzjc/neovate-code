@@ -31,6 +31,7 @@ import { SlashCommandManager } from './slashCommand';
 import { getFiles } from './utils/files';
 import { listDirectory } from './utils/list';
 import { randomUUID } from './utils/randomUUID';
+import { WorkspaceWatcher } from './utils/workspaceWatcher';
 
 type ModelData = Omit<Model, 'id' | 'cost'>;
 
@@ -41,10 +42,17 @@ type NodeBridgeOpts = {
 export class NodeBridge {
   messageBus: MessageBus;
   private contextCreateOpts: any;
+  private nodeHandlerRegistry: NodeHandlerRegistry;
   constructor(opts: NodeBridgeOpts) {
     this.messageBus = new MessageBus();
     this.contextCreateOpts = opts.contextCreateOpts;
-    new NodeHandlerRegistry(this.messageBus, this.contextCreateOpts);
+    this.nodeHandlerRegistry = new NodeHandlerRegistry(
+      this.messageBus,
+      this.contextCreateOpts,
+    );
+  }
+  public destroy() {
+    this.nodeHandlerRegistry.destroy();
   }
 }
 
@@ -53,9 +61,11 @@ class NodeHandlerRegistry {
   private contextCreateOpts: any;
   private contexts = new Map<string, Context>();
   private abortControllers = new Map<string, AbortController>();
+  private workspaceWatcher: WorkspaceWatcher;
   constructor(messageBus: MessageBus, contextCreateOpts: any) {
     this.messageBus = messageBus;
     this.contextCreateOpts = contextCreateOpts;
+    this.workspaceWatcher = new WorkspaceWatcher(messageBus);
     this.registerHandlers();
   }
 
@@ -525,6 +535,7 @@ class NodeHandlerRegistry {
       'project.clearContext',
       async (data: { cwd?: string }) => {
         await this.clearContext(data.cwd);
+        this.workspaceWatcher.stop({ cwd: data.cwd });
         return {
           success: true,
         };
@@ -1210,6 +1221,7 @@ class NodeHandlerRegistry {
       'session.initialize',
       async (data: { cwd: string; sessionId?: string }) => {
         const context = await this.getContext(data.cwd);
+        this.workspaceWatcher.start(data.cwd);
         await context.apply({
           hook: 'initialized',
           args: [{ cwd: data.cwd, quiet: false }],
@@ -2000,6 +2012,19 @@ class NodeHandlerRegistry {
         }
       },
     );
+    //////////////////////////////////////////////
+    // workspace
+    this.messageBus.registerHandler(
+      'workspace.exit',
+      async ({ cwd }: { cwd: string }) => {
+        this.workspaceWatcher.stop({ cwd });
+      },
+    );
+  }
+  public destroy() {
+    this.contexts.forEach(async (context) => {
+      this.workspaceWatcher.stop({ cwd: context.cwd });
+    });
   }
 }
 
