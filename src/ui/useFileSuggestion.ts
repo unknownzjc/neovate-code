@@ -22,7 +22,7 @@ export function usePaths() {
     setIsLoading(true);
     // TODO: improve this
     // Now it's load only once
-    if (Date.now() - lastLoadTime < 600000000000) {
+    if (Date.now() - lastLoadTime < 20000) {
       setIsLoading(false);
       return;
     }
