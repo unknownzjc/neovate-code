@@ -233,19 +233,24 @@ export async function gitPush(
     const gitProcess = spawn('git', ['push', '--progress'], { cwd });
     let stderr = '';
 
+    // Process output, handling \r (carriage return) for in-place progress updates
+    // Only output complete lines (ending with \n), taking the last \r segment
     const processOutput = (
       data: Buffer,
       stream: 'stdout' | 'stderr',
       buffer: string,
     ): string => {
       const text = buffer + data.toString();
-      // Git progress uses \r for in-place updates, handle both \n and \r
-      const lines = text.split(/[\r\n]/);
+      // Split by newlines only
+      const lines = text.split('\n');
       // Keep the last incomplete line in buffer
       const incomplete = lines.pop() || '';
       for (const line of lines) {
-        if (line.trim()) {
-          onOutput(line, stream);
+        // For lines with \r, take only the last segment (final progress state)
+        const segments = line.split('\r');
+        const finalSegment = segments[segments.length - 1];
+        if (finalSegment.trim()) {
+          onOutput(finalSegment, stream);
         }
       }
       return incomplete;
@@ -268,12 +273,20 @@ export async function gitPush(
     });
 
     gitProcess.on('close', (code) => {
-      // Flush any remaining buffered content
+      // Flush any remaining buffered content, handling \r for progress updates
       if (stdoutBuffer.trim()) {
-        onOutput(stdoutBuffer, 'stdout');
+        const segments = stdoutBuffer.split('\r');
+        const finalSegment = segments[segments.length - 1];
+        if (finalSegment.trim()) {
+          onOutput(finalSegment, 'stdout');
+        }
       }
       if (stderrBuffer.trim()) {
-        onOutput(stderrBuffer, 'stderr');
+        const segments = stderrBuffer.split('\r');
+        const finalSegment = segments[segments.length - 1];
+        if (finalSegment.trim()) {
+          onOutput(finalSegment, 'stderr');
+        }
       }
 
       if (code === 0) {

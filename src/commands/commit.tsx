@@ -204,7 +204,11 @@ const CommitUI: React.FC<CommitUIProps> = ({ messageBus, cwd, options }) => {
             phase: 'executing',
             action: 'push',
             data,
-            outputLines: prev.phase === 'executing' ? prev.outputLines : [],
+            // Add separator before push output
+            outputLines:
+              prev.phase === 'executing' && prev.outputLines?.length
+                ? [...prev.outputLines, '']
+                : [],
           }));
           const pushResult = await messageBus.request('git.push', { cwd });
 
@@ -497,7 +501,11 @@ const CommitUI: React.FC<CommitUIProps> = ({ messageBus, cwd, options }) => {
             phase: 'executing',
             action: 'push',
             data,
-            outputLines: prev.phase === 'executing' ? prev.outputLines : [],
+            // Add separator before push output
+            outputLines:
+              prev.phase === 'executing' && prev.outputLines?.length
+                ? [...prev.outputLines, '']
+                : [],
           }));
           const pushResult = await messageBus.request('git.push', { cwd });
 
@@ -743,7 +751,7 @@ const CommitUI: React.FC<CommitUIProps> = ({ messageBus, cwd, options }) => {
               <Box flexDirection="column" marginTop={1} paddingLeft={2}>
                 {state.outputLines.map((line, idx) => (
                   <Text key={`output-${idx}-${line.slice(0, 20)}`} dimColor>
-                    {line}
+                    {line || ' '}
                   </Text>
                 ))}
               </Box>
@@ -760,7 +768,7 @@ const CommitUI: React.FC<CommitUIProps> = ({ messageBus, cwd, options }) => {
             <Box flexDirection="column" marginTop={1} paddingLeft={2}>
               {state.outputLines.map((line, idx) => (
                 <Text key={`output-${idx}-${line.slice(0, 20)}`} dimColor>
-                  {line}
+                  {line || ' '}
                 </Text>
               ))}
             </Box>
@@ -813,7 +821,7 @@ const CommitUI: React.FC<CommitUIProps> = ({ messageBus, cwd, options }) => {
             <Box flexDirection="column" marginTop={1} paddingLeft={2}>
               {state.outputLines.map((line, idx) => (
                 <Text key={`output-${idx}-${line.slice(0, 20)}`} dimColor>
-                  {line}
+                  {line || ' '}
                 </Text>
               ))}
             </Box>
