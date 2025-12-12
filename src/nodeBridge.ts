@@ -1212,6 +1212,161 @@ ${diff}
 
     //////////////////////////////////////////////
     // git operations
+    this.messageBus.registerHandler('git.status', async (data) => {
+      const { cwd } = data;
+      try {
+        const {
+          isGitInstalled,
+          isGitRepository,
+          hasUncommittedChanges,
+          isGitUserConfigured,
+        } = await import('./utils/git');
+        const { getStagedFileList } = await import('./utils/git');
+
+        // Check if git is installed
+        const gitInstalled = await isGitInstalled();
+        if (!gitInstalled) {
+          return {
+            success: true,
+            data: {
+              isRepo: false,
+              hasUncommittedChanges: false,
+              hasStagedChanges: false,
+              isGitInstalled: false,
+              isUserConfigured: { name: false, email: false },
+            },
+          };
+        }
+
+        // Check if it's a git repository
+        const isRepo = await isGitRepository(cwd);
+        if (!isRepo) {
+          return {
+            success: true,
+            data: {
+              isRepo: false,
+              hasUncommittedChanges: false,
+              hasStagedChanges: false,
+              isGitInstalled: true,
+              isUserConfigured: { name: false, email: false },
+            },
+          };
+        }
+
+        // Get all status information in parallel
+        const [hasChanges, userConfig, stagedFiles] = await Promise.all([
+          hasUncommittedChanges(cwd),
+          isGitUserConfigured(cwd),
+          getStagedFileList(cwd),
+        ]);
+
+        return {
+          success: true,
+          data: {
+            isRepo: true,
+            hasUncommittedChanges: hasChanges,
+            hasStagedChanges: stagedFiles.length > 0,
+            isGitInstalled: true,
+            isUserConfigured: userConfig,
+          },
+        };
+      } catch (error: any) {
+        return {
+          success: false,
+          error: error.message || 'Failed to get git status',
+        };
+      }
+    });
+
+    this.messageBus.registerHandler('git.stage', async (data) => {
+      const { cwd, all = true } = data;
+      try {
+        const { stageAll } = await import('./utils/git');
+
+        if (all) {
+          await stageAll(cwd);
+        }
+
+        return { success: true };
+      } catch (error: any) {
+        return {
+          success: false,
+          error: error.message || 'Failed to stage changes',
+        };
+      }
+    });
+
+    this.messageBus.registerHandler('git.commit', async (data) => {
+      const { cwd, message, noVerify = false } = data;
+      try {
+        const { gitCommit } = await import('./utils/git');
+        await gitCommit(cwd, message, noVerify);
+        return { success: true };
+      } catch (error: any) {
+        return {
+          success: false,
+          error: error.message || 'Failed to commit changes',
+        };
+      }
+    });
+
+    this.messageBus.registerHandler('git.push', async (data) => {
+      const { cwd } = data;
+      try {
+        const { gitPush, hasRemote } = await import('./utils/git');
+
+        // Check if remote exists
+        const remoteExists = await hasRemote(cwd);
+        if (!remoteExists) {
+          return {
+            success: false,
+            error: 'No remote repository configured',
+          };
+        }
+
+        await gitPush(cwd);
+        return { success: true };
+      } catch (error: any) {
+        return {
+          success: false,
+          error: error.message || 'Failed to push changes',
+        };
+      }
+    });
+
+    this.messageBus.registerHandler('git.createBranch', async (data) => {
+      const { cwd, name } = data;
+      try {
+        const { createAndCheckoutBranch, branchExists } = await import(
+          './utils/git'
+        );
+
+        // Check if branch already exists
+        const exists = await branchExists(cwd, name);
+        if (exists) {
+          // Add timestamp to make it unique
+          const timestamp = new Date()
+            .toISOString()
+            .slice(0, 16)
+            .replace(/[-:]/g, '');
+          const newName = `${name}-${timestamp}`;
+          await createAndCheckoutBranch(cwd, newName);
+          return {
+            success: true,
+            data: { branchName: newName, wasRenamed: true },
+          };
+        }
+
+        await createAndCheckoutBranch(cwd, name);
+        return { success: true, data: { branchName: name, wasRenamed: false } };
+      } catch (error: any) {
+        return {
+          success: false,
+          error: error.message || 'Failed to create branch',
+        };
+      }
+    });
+
     this.messageBus.registerHandler('git.clone', async (data) => {
       const { url, destination, taskId } = data;
       const { cloneRepository } = await import('./utils/git');
