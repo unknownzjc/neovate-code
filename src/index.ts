@@ -260,7 +260,7 @@ async function runInteractive(
     const history = globalData.getProjectHistory({ cwd });
     return [messages, history];
   })();
-  const initialPrompt = String(argv._[0] || '');
+  const initialPrompt = argv._.length > 0 ? argv._.join(' ') : '';
   await appStore.initialize({
     bridge: uiBridge,
     cwd,
