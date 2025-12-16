@@ -14,7 +14,6 @@ const PRODUCT_NAMES = ['neovate', 'takumi', 'kwaipilot'];
 export function listDirectory(
   initialPath: string,
   cwd: string,
-  productName: string = PRODUCT_NAME,
   maxFiles: number = MAX_FILES,
 ) {
   const results: string[] = [];
@@ -47,8 +46,7 @@ export function listDirectory(
       const childPath = join(path, child.name);
 
       // Skip if ignored by any of the product-specific ignore files
-      const productNames = [...new Set([...PRODUCT_NAMES, productName])];
-      if (isIgnored(childPath, cwd, productNames)) {
+      if (isIgnored(childPath, cwd, PRODUCT_NAMES)) {
         continue;
       }
 
@@ -75,10 +73,7 @@ function skip(path: string) {
   return false;
 }
 
-export function listRootDirectory(
-  rootPath: string,
-  productName: string = PRODUCT_NAME,
-): string[] {
+export function listRootDirectory(rootPath: string): string[] {
   const results: string[] = [];
   try {
     const children = fs.readdirSync(rootPath, { withFileTypes: true });
