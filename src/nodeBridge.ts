@@ -1161,7 +1161,7 @@ ${diff}
 
         // Use custom system prompt or default
         const finalSystemPrompt =
-          systemPrompt || createGenerateCommitSystemPrompt({ language });
+          systemPrompt || createGenerateCommitSystemPrompt(language);
 
         // Call utils.quickQuery with JSON schema for structured output
         const result = await this.messageBus.messageHandlers.get(

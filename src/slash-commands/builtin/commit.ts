@@ -13,7 +13,7 @@ export function createCommitCommand(language: string): PromptCommand {
     description: 'Generate commit message for staged changes',
     progressMessage: 'Generating commit message...',
     async getPromptForCommand(_args?: string) {
-      const systemPrompt = createGenerateCommitSystemPrompt({ language });
+      const systemPrompt = createGenerateCommitSystemPrompt(language);
       const lockFiles = [
         'pnpm-lock.yaml',
         'package-lock.json',

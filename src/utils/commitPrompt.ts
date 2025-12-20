@@ -1,29 +1,6 @@
 import { isEnglish } from './language';
 
-export interface CommitPromptOptions {
-  language?: string;
-  formatting?: string;
-}
-
-const DEFAULT_FORMATTING = `
-## Response Format
-
-Respond with valid JSON only, no additional text or markdown formatting.
-
-Example response:
-{
-  "commitMessage": "feat: add user authentication system",
-  "branchName": "feat/add-user-authentication",
-  "isBreakingChange": false,
-  "summary": "Added JWT-based authentication with login and logout endpoints."
-}
-`.trim();
-
-export function createGenerateCommitSystemPrompt(
-  options?: CommitPromptOptions,
-): string {
-  const language = options?.language ?? 'English';
-  const formatting = options?.formatting ?? DEFAULT_FORMATTING;
+export function createGenerateCommitSystemPrompt(language: string): string {
   const useEnglish = isEnglish(language);
   const descriptionLang = useEnglish
     ? ''
@@ -57,6 +34,16 @@ Analyze the changes carefully and generate a JSON response with the following fi
 4. **summary**: A brief 1-2 sentence summary of the changes${summaryLang}
    - Describe what was changed and why
 
-${formatting}
+## Response Format
+
+Respond with valid JSON only, no additional text or markdown formatting.
+
+Example response:
+{
+  "commitMessage": "feat: add user authentication system",
+  "branchName": "feat/add-user-authentication",
+  "isBreakingChange": false,
+  "summary": "Added JWT-based authentication with login and logout endpoints."
+}
   `.trim();
 }
